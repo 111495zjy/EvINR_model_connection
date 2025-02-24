@@ -79,7 +79,7 @@ def main(args):
             image_data = (intensity1*255).astype(np.uint8)
             # 将 NumPy 数组转换为 PIL 图像对象
             image = Image.fromarray(image_data)
-            output_path = os.path.join('/content/EvINR/logs', 'output_image_{}.png'.format(j+accumulation_number))
+            output_path = os.path.join('/content/EvINR_model_connection/logs', 'output_image_{}.png'.format(j+accumulation_number))
             image.save(output_path)
           accumulation_number = accumulation_number + intensity_preds.shape[0]
           print(accumulation_number)
