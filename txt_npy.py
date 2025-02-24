@@ -1,7 +1,7 @@
 import numpy as np
 
-txt_file_path = '/content/EvINR/ECD/dynamic_6dof/events.txt'
-npy_file_path = '/content/EvINR/ECD/dynamic_6dof/events.npy'
+txt_file_path = '/content/EvINR_model_connection/ECD/dynamic_6dof/events.txt'
+npy_file_path = '/content/EvINR_model_connection/ECD/dynamic_6dof/events.npy'
 events = []
 with open(txt_file_path, 'r') as f:
     for line in f:
