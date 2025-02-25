@@ -30,7 +30,7 @@ class EvINRModel(nn.Module):
         # spatial regularization to reduce noise
         x_grad = log_intensity_preds[:, 1: , :, :] - log_intensity_preds[:, 0: -1, :, :]
         y_grad = log_intensity_preds[:, :, 1: , :] - log_intensity_preds[:, :, 0: -1, :]
-        spatial_loss = 0.06 * (
+        spatial_loss = 0.05 * (
             x_grad.abs().mean() + y_grad.abs().mean() + event_frame_preds.abs().mean()
         )
 
@@ -40,27 +40,7 @@ class EvINRModel(nn.Module):
         )
         print((temperal_loss + spatial_loss + const_loss))
         return (temperal_loss + spatial_loss + const_loss)
-
-    def get_losses2(self, log_intensity_preds, event_frames, logintensity_follow):
-        # temporal supervision to solve the event generation equation
-
-        event_frame_preds = log_intensity_preds[1:] - log_intensity_preds[0: -1]
-        temperal_loss = F.mse_loss(event_frame_preds, event_frames[:-1])
-        inital_loss = 2*F.mse_loss(log_intensity_preds[0], logintensity_follow)
-        # spatial regularization to reduce noise
-        x_grad = log_intensity_preds[:, 1: , :, :] - log_intensity_preds[:, 0: -1, :, :]
-        y_grad = log_intensity_preds[:, :, 1: , :] - log_intensity_preds[:, :, 0: -1, :]
-        spatial_loss = 0.05 * (
-            x_grad.abs().mean() + y_grad.abs().mean() + event_frame_preds.abs().mean()
-        )
-
-        # loss term to keep the average intensity of each frame constant
-        const_loss = 0.1 * torch.var(
-            log_intensity_preds.reshape(log_intensity_preds.shape[0], -1).mean(dim=-1)
-        )
-        print((temperal_loss + spatial_loss + const_loss+inital_loss))
-        return (temperal_loss + spatial_loss + const_loss +inital_loss)    
-
+    
     def tonemapping(self, log_intensity_preds, gamma=0.6):
         intensity_preds = torch.exp(log_intensity_preds).detach()
         # Reinhard tone-mapping
