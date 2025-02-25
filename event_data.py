@@ -21,7 +21,7 @@ class EventData():
         events[: ,0] = events[:, 0] - events[0, 0]
         events[events[:, 3] == 0, 3] = -1
         events = events[(events[:, 0] > self.t_start) & (events[:, 0] < self.t_end)]
-        events[: ,0] = (events[: ,0] - self.t_start) / (self.t_end - self.t_start) # Normalize event timestampes to [-1, 1]
+        events[: ,0] = (events[: ,0] - self.t_start) / (self.t_end - self.t_start)
 
         if self.H > self.W:
             self.H, self.W = self.W, self.H
@@ -29,10 +29,11 @@ class EventData():
             
         if events.shape[0] == 0:
             raise ValueError(f'No events in [{self.t_start}, {self.t_end}]!')
+
         return events
     
     def stack_event_frames(self, num_frames):
-        
+        print(f'Stacking {num_frames} event frames from {self.events.shape[0]} events ...')
         event_chunks = np.array_split(self.events, num_frames)
         event_frames, event_timestamps = [], []
         for i, event_chunk in enumerate(event_chunks):
