@@ -19,11 +19,11 @@ def config_parser():
     parser.add_argument('--H', type=int, default=180, help='Height of frames')
     parser.add_argument('--W', type=int, default=240, help='Width of frames')
     parser.add_argument('--color_event', action='store_true', default=False, help='Whether to use color event')
-    parser.add_argument('--event_thresh', type=float, default=3, help='Event activation threshold')
+    parser.add_argument('--event_thresh', type=float, default=1, help='Event activation threshold')
     parser.add_argument('--train_resolution', type=int, default=60, help='Number of training frames')
     parser.add_argument('--val_resolution', type=int, default=50, help='Number of validation frames')
     parser.add_argument('--no_c2f', action='store_true', default=False, help='Whether to use coarse-to-fine training')
-    parser.add_argument('--iters', type=int, default=1000, help='Training iterations')
+    parser.add_argument('--iters', type=int, default=2000, help='Training iterations')
     parser.add_argument('--log_interval', type=int, default=100, help='Logging interval')
     parser.add_argument('--lr', type=float, default=3e-4, help='Learning rate')
     parser.add_argument('--net_layers', type=int, default=3, help='Number of layers in the network')
@@ -40,26 +40,22 @@ def main(args):
     for i in range(2*split_number-1):
       diff_time = args.t_end-args.t_start
       events.append(EventData(
-          args.data_path, i*diff_time//(2*split_number)+args.t_start, i*diff_time//(2*split_number)+diff_time//split_number+args.t_start, args.H, args.W, args.color_event, args.event_thresh, args.device))
+          args.data_path, i*diff_time/(2*split_number)+args.t_start, i*diff_time/(2*split_number)+diff_time/split_number+args.t_start, args.H, args.W, args.color_event, args.event_thresh, args.device))
       model.append(EvINRModel(
           args.net_layers, args.net_width, H=args.H, W=args.W, recon_colors=args.color_event
           ).to(args.device))
       optimizer.append(torch.optim.AdamW(params=model[i].net.parameters(), lr=3e-4))
       events[i].stack_event_frames(args.train_resolution)
-      print("begin to train next model")
       for i_iter in range(1, args.iters + 1):
         optimizer[i].zero_grad()
         log_intensity_preds = model[i](events[i].timestamps)
-        #if i==0:
         model[i].get_losses(log_intensity_preds, events[i].event_frames).backward()
         optimizer[i].step()
       if not args.no_c2f and i_iter == (args.iters // 2):
-        events[i].stack_event_frames(args.train_resolution*2)
+        events[i].stack_event_frames(args.train_resolution * 2)
 
-        #else:
-          #model[i].get_losses2(log_intensity_preds, events[i].event_frames,logintensity_follow).backward()
-          #optimizer[i].step()
-      #logintensity_follow = model[i](torch.tensor([0.5], device="cuda")).detach().clone() #the middle intensity is the next model's inital intensity
+
+
 
 
     with torch.no_grad():
@@ -73,13 +69,12 @@ def main(args):
             val_timestamps = torch.linspace(0.25, 0.75, args.val_resolution).to(args.device).reshape(-1, 1)
           log_intensity_preds = model[i](val_timestamps)
           intensity_preds = model[i].tonemapping(log_intensity_preds).squeeze(-1)
-          
           for j in range(0, intensity_preds.shape[0]):
             intensity1 = intensity_preds[j].cpu().detach().numpy()
             image_data = (intensity1*255).astype(np.uint8)
             # 将 NumPy 数组转换为 PIL 图像对象
             image = Image.fromarray(image_data)
-            output_path = os.path.join('/content/EvINR_model_connection/logs', 'output_image_{}.png'.format(j+accumulation_number))
+            output_path = os.path.join('/content/EvINR/logs', 'output_image_{}.png'.format(j+accumulation_number))
             image.save(output_path)
           accumulation_number = accumulation_number + intensity_preds.shape[0]
           print(accumulation_number)
