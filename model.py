@@ -73,11 +73,16 @@ class SineLayer(nn.Module):
     ):
         super().__init__()
         self.omega_0 = omega_0
+        self.scale_0 = 15
+        self.scale_1 = 1
         self.is_first = is_first
         self.is_last = is_last
         self.in_features = in_features
         self.linear = nn.Linear(in_features, out_features, bias=bias)
+        self.orth = nn.Linear(in_features, out_features, bias=bias)
+
         self.init_weights()
+
     
     @torch.no_grad()
     def init_weights(self):
@@ -90,7 +95,12 @@ class SineLayer(nn.Module):
             )
                 
     def forward(self, input):
+        lin = self.linear(input)
+        orth = self.orth(input)
+        scale = self.scale_0 * lin
+        omega = self.omega_0 * lin
+        scale_orth = self.scale_1 * orth
         if self.is_last:
             return self.omega_0 * self.linear(input)
         else:
-            return torch.sin(self.omega_0 * self.linear(input))
+            return torch.sin(omega)*torch.exp(-scale.abs().square()-scale_orth.abs().square())
